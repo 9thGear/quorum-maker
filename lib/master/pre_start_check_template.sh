@@ -45,6 +45,11 @@ function readParameters() {
             wsPort="$2"
             shift # past argument
             shift # past value
+            ;;
+            -t|--tessera)
+            tessera="true"
+            shift # past argument
+            shift # past value
             ;;            
             *)    # unknown option
             POSITIONAL+=("$1") # save it in an array for later
@@ -133,9 +138,16 @@ function generateConstellationConf() {
     PATTERN2="s/#C_PORT#/$cPort/g"
     PATTERN3="s/#mNode#/$nodeName/g"
 
-    sed -i "$PATTERN1" node/constellation.conf
-    sed -i "$PATTERN2" node/constellation.conf
-    sed -i "$PATTERN3" node/constellation.conf
+    sed -i "$PATTERN1" node/$nodeName.conf
+    sed -i "$PATTERN2" node/$nodeName.conf
+    sed -i "$PATTERN3" node/$nodeName.conf
+}
+
+function migrateToTessera() {
+    
+    pushd node
+    . ./migrate_to_tessera.sh "http://${pCurrentIp}:$cPort/"  >> /dev/null 2>&1
+    popd
 }
 
 function main(){
@@ -149,7 +161,12 @@ function main(){
         readInputs
         staticNode
         generateConstellationConf
-
+        
+        if [ ! -z $tessera ]; then
+            migrateToTessera
+            PRIVACY="TESSERA"
+        fi
+        
         publickey=$(cat node/keys/$nodeName.pub)
         uiUrl="http://localhost:"$tgoPort"/"
         echo 'PUBKEY='$publickey >> ./setup.conf

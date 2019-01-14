@@ -60,6 +60,11 @@ function readParameters() {
             wsPort="$2"
             shift # past argument
             shift # past value
+            ;;
+            -t|--tessera)
+            tessera="true"
+            shift # past argument
+            shift # past value
             ;;            
             *)    # unknown option
             POSITIONAL+=("$1") # save it in an array for later
@@ -162,7 +167,11 @@ function copyScripts(){
 
     cp lib/common.sh  ${sNode}/node
 
-    cp lib/slave/constellation_template.conf ${sNode}/node/constellation.conf
+    cp lib/slave/constellation_template.conf ${sNode}/node/${sNode}.conf
+
+    cp lib/slave/migrate_to_tessera.sh ${sNode}/node
+    PATTERN="s/#mNode#/${sNode}/g"
+    sed -i $PATTERN ${sNode}/node/migrate_to_tessera.sh
 }
 
 function createSetupConf() {
@@ -179,6 +188,10 @@ function createSetupConf() {
     echo 'REGISTERED=' >> ${sNode}/setup.conf
     echo 'MODE=ACTIVE' >> ${sNode}/setup.conf
     echo 'STATE=I' >> ${sNode}/setup.conf
+    
+    if [ ! -z $tessera ]; then
+        echo 'TESSERA=true' >> ${sNode}/setup.conf        
+    fi
 }
 
 function cleanup() {
